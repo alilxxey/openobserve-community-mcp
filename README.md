@@ -2,50 +2,37 @@
 
 `stdio` MCP server for OpenObserve Community Edition, using only the regular REST API.
 
-Scope:
+This package is designed for local MCP clients such as Claude and Codex.
+
+What it is:
 
 - `stdio` only
 - Community Edition only
-- read-only tools only
+- read-only only
+- regular OpenObserve REST API only
 - no native `/mcp` endpoint
 
-## Install
+## Quick Start
 
-Recommended:
-
-```bash
-uv tool install openobserve-community-mcp
-```
-
-Fallback:
+### 1. Create a config file
 
 ```bash
-python3 -m pip install openobserve-community-mcp
+uvx --from openobserve-community-mcp openobserve-mcp init-config
 ```
 
-## Configure
-
-### Option 1. User config file
-
-Create a sample config:
-
-```bash
-openobserve-mcp init-config
-```
-
-Print the default config path:
-
-```bash
-openobserve-mcp config-path
-```
-
-Default path:
+This creates a sample config at:
 
 ```text
 ~/.config/openobserve-mcp/config.env
 ```
 
-Example config:
+Edit it:
+
+```bash
+$EDITOR ~/.config/openobserve-mcp/config.env
+```
+
+Example:
 
 ```dotenv
 OO_BASE_URL=https://openobserve.example.com
@@ -58,11 +45,33 @@ OO_TIMEOUT_SECONDS=20
 OO_VERIFY_SSL=true
 ```
 
-### Option 2. Environment variables
+### 2. Add it to Claude
 
-You can also pass config directly via environment variables.
+```bash
+claude mcp add openobserve-community -- uvx --from openobserve-community-mcp openobserve-mcp
+```
 
-Supported variables:
+### 3. Add it to Codex
+
+```bash
+codex mcp add openobserve-community -- uvx --from openobserve-community-mcp openobserve-mcp
+```
+
+That is the recommended user-facing flow:
+
+- no repo clone
+- no manual absolute path
+- no `PATH` setup for the installed binary
+
+## Configuration
+
+Default config path:
+
+```text
+~/.config/openobserve-mcp/config.env
+```
+
+Supported settings:
 
 - `OO_BASE_URL`
 - `OO_ORG_ID` optional
@@ -80,15 +89,9 @@ Config precedence:
 3. legacy `.env.local` in the current directory
 4. process environment overrides file values
 
-## Add To Claude
+You can also pass config directly via MCP client env settings.
 
-With user config file already created:
-
-```bash
-claude mcp add openobserve-community -- openobserve-mcp
-```
-
-With env passed directly:
+### Claude with inline env
 
 ```bash
 claude mcp add openobserve-community \
@@ -96,18 +99,10 @@ claude mcp add openobserve-community \
   -e OO_AUTH_MODE=basic \
   -e OO_USERNAME=your_username \
   -e OO_PASSWORD=your_password \
-  -- openobserve-mcp
+  -- uvx --from openobserve-community-mcp openobserve-mcp
 ```
 
-## Add To Codex
-
-With user config file already created:
-
-```bash
-codex mcp add openobserve-community -- openobserve-mcp
-```
-
-With env passed directly:
+### Codex with inline env
 
 ```bash
 codex mcp add openobserve-community \
@@ -115,10 +110,10 @@ codex mcp add openobserve-community \
   --env OO_AUTH_MODE=basic \
   --env OO_USERNAME=your_username \
   --env OO_PASSWORD=your_password \
-  -- openobserve-mcp
+  -- uvx --from openobserve-community-mcp openobserve-mcp
 ```
 
-## Available Tools
+## Tools
 
 - `list_streams`
 - `get_stream_schema`
@@ -128,6 +123,41 @@ codex mcp add openobserve-community \
 - `list_dashboards`
 - `get_dashboard`
 - `get_latest_traces`
+
+## Optional Local Install
+
+If you prefer a persistent local binary instead of `uvx`:
+
+```bash
+uv tool install openobserve-community-mcp
+```
+
+This installs the `openobserve-mcp` command into your user-level `uv` tools directory.
+
+### Add To Claude With Global Install
+
+```bash
+claude mcp add openobserve-community -- openobserve-mcp
+```
+
+### Add To Codex With Global Install
+
+```bash
+codex mcp add openobserve-community -- openobserve-mcp
+```
+
+You can also run the server directly:
+
+```bash
+openobserve-mcp
+```
+
+This mode may require `~/.local/bin` to be present in your `PATH`.
+
+If `openobserve-mcp` is not found, either:
+
+- add `~/.local/bin` to your `PATH`; or
+- use the recommended `uvx --from openobserve-community-mcp openobserve-mcp` launch mode instead.
 
 ## Development
 
