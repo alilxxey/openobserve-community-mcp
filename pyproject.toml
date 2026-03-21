@@ -1,0 +1,19 @@
+[project]
+name = "openobserve-community-mcp"
+version = "0.1.0"
+description = "OpenObserve community stdio MCP server"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.12,<2",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["openobserve_mcp*"]
+
+[project.scripts]
+openobserve-mcp = "openobserve_mcp.cli:main"
