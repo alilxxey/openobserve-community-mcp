@@ -49,6 +49,7 @@ def build_stream_schema_result(
         "doc_time_min": raw.get("stats", {}).get("doc_time_min") if isinstance(raw, dict) else None,
         "doc_time_max": raw.get("stats", {}).get("doc_time_max") if isinstance(raw, dict) else None,
         "field_count": len(fields),
+        "fields_truncated": len(fields) > 50,
         "fields_preview": [
             {
                 "name": field.get("name"),
@@ -71,8 +72,11 @@ def build_search_logs_result(
     result: dict[str, Any] = {
         "org_id": org_id,
         "took": raw.get("took") if isinstance(raw, dict) else None,
+        "total": raw.get("total") if isinstance(raw, dict) else None,
+        "scan_records": raw.get("scan_records") if isinstance(raw, dict) else None,
+        "cached_ratio": raw.get("cached_ratio") if isinstance(raw, dict) else None,
         "hit_count": len(hits),
-        "records": [summarize_log_record(hit) for hit in hits if isinstance(hit, dict)],
+        "records": [summarize_search_record(hit) for hit in hits if isinstance(hit, dict)],
     }
     return maybe_include_raw(result, raw, include_raw)
 
@@ -91,7 +95,7 @@ def build_search_around_result(
         "stream_name": stream_name,
         "requested_size": size,
         "hit_count": len(hits),
-        "records": [summarize_log_record(hit) for hit in hits if isinstance(hit, dict)],
+        "records": [summarize_search_record(hit) for hit in hits if isinstance(hit, dict)],
     }
     return maybe_include_raw(result, raw, include_raw)
 
@@ -181,6 +185,12 @@ def build_latest_traces_result(
     return maybe_include_raw(result, raw, include_raw)
 
 
+def summarize_search_record(hit: dict[str, Any]) -> dict[str, Any]:
+    if _should_preserve_record(hit):
+        return dict(hit)
+    return summarize_log_record(hit)
+
+
 def summarize_log_record(hit: dict[str, Any]) -> dict[str, Any]:
     return {
         "timestamp_us": hit.get("_timestamp"),
@@ -194,6 +204,18 @@ def summarize_log_record(hit: dict[str, Any]) -> dict[str, Any]:
         "container_name": hit.get("kubernetes_container_name"),
         "file": hit.get("file"),
     }
+
+
+def _should_preserve_record(hit: dict[str, Any]) -> bool:
+    if "_timestamp" not in hit:
+        return True
+
+    # Preserve explicit projections and aggregation rows instead of forcing them
+    # into the fixed log-summary schema.
+    if len(hit) <= 8:
+        return True
+
+    return False
 
 
 def extract_trace_items(raw: Any) -> list[dict[str, Any]]:

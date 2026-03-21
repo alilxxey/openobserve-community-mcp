@@ -78,7 +78,7 @@ def create_server() -> Any:
         timeout: int | None = None,
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Run a SQL log search against OpenObserve. Time values are Unix timestamps in microseconds."""
+        """Run a full SQL search against OpenObserve logs. Supports WHERE, ORDER BY, GROUP BY, and aggregate functions. Time values are Unix timestamps in microseconds."""
         raw = client.search_sql(
             sql=sql,
             start_time=start_time,
@@ -103,7 +103,7 @@ def create_server() -> Any:
         timeout: int | None = None,
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Fetch records around a specific log entry."""
+        """Fetch records around a specific log entry. key must be the target record's _timestamp value in microseconds."""
         raw = client.search_around(
             stream_name=stream_name,
             key=key,
@@ -134,7 +134,7 @@ def create_server() -> Any:
         no_count: bool = False,
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Get distinct field values for a stream over a time range. Time values are Unix timestamps in microseconds."""
+        """Get distinct field values for a stream over a time range. filter_query is passed directly to OpenObserve's _values filter parser and may differ from normal SQL WHERE syntax. Time values are Unix timestamps in microseconds."""
         raw = client.search_values(
             stream_name=stream_name,
             fields=fields,

@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping
 from urllib import error, parse, request
 
+from . import PACKAGE_NAME, __version__
 from .config import OpenObserveConfig
 from .errors import OpenObserveMcpError
 
@@ -42,7 +43,7 @@ class OpenObserveClient:
         url = self._build_url(path, query=query)
         headers = {
             "Accept": "application/json",
-            "User-Agent": "openobserve-mcp/0.1.0",
+            "User-Agent": self._user_agent(),
             "Authorization": self._build_authorization_header(),
         }
         data: bytes | None = None
@@ -63,7 +64,7 @@ class OpenObserveClient:
                 return json.loads(response_body)
         except error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="replace")
-            raise OpenObserveApiError(exc.code, self._format_http_error(exc.code, body), body=body) from exc
+            raise OpenObserveApiError(exc.code, self._format_http_error(exc.code, body, path=path), body=body) from exc
         except error.URLError as exc:
             raise OpenObserveApiError(0, f"Failed to reach OpenObserve API: {exc.reason}") from exc
         except json.JSONDecodeError as exc:
@@ -227,11 +228,21 @@ class OpenObserveClient:
         if timeout is not None:
             query["timeout"] = timeout
 
-        return self.request_json(
-            "GET",
-            self._org_path("/api/{org_id}/{stream_name}/_values", stream_name=stream_name),
-            query=query,
-        )
+        try:
+            return self.request_json(
+                "GET",
+                self._org_path("/api/{org_id}/{stream_name}/_values", stream_name=stream_name),
+                query=query,
+            )
+        except OpenObserveApiError as exc:
+            if filter_query and exc.status_code == 500:
+                raise OpenObserveApiError(
+                    exc.status_code,
+                    f"{exc} filter_query is passed directly to OpenObserve's _values filter parser "
+                    "and may not match normal SQL WHERE syntax.",
+                    body=exc.body,
+                ) from exc
+            raise
 
     def list_dashboards(
         self,
@@ -325,18 +336,42 @@ class OpenObserveClient:
         context.verify_mode = ssl.CERT_NONE
         return context
 
-    def _format_http_error(self, status_code: int, body: str) -> str:
+    def _user_agent(self) -> str:
+        return f"{PACKAGE_NAME}/{__version__}"
+
+    def _format_http_error(self, status_code: int, body: str, *, path: str) -> str:
         trimmed_body = body.strip()
+        extracted_message = _extract_error_message(trimmed_body)
         if status_code == 401:
-            return "OpenObserve rejected the credentials with 401 Unauthorized."
+            return extracted_message or "OpenObserve rejected the credentials with 401 Unauthorized."
         if status_code == 403:
-            return "OpenObserve rejected access with 403 Forbidden."
+            return extracted_message or "OpenObserve rejected access with 403 Forbidden."
         if status_code == 404:
+            if extracted_message:
+                return f"OpenObserve returned 404 Not Found: {extracted_message}"
+            if "/dashboards/" in path:
+                return "Requested dashboard was not found."
             return "Requested OpenObserve API endpoint was not found."
         if status_code == 409:
-            return "OpenObserve reported a conflict for this request."
+            return extracted_message or "OpenObserve reported a conflict for this request."
         if status_code == 429:
-            return "OpenObserve rate-limited the request."
+            return extracted_message or "OpenObserve rate-limited the request."
         if trimmed_body:
+            if extracted_message:
+                return f"OpenObserve API returned HTTP {status_code}: {extracted_message}"
             return f"OpenObserve API returned HTTP {status_code}: {trimmed_body}"
         return f"OpenObserve API returned HTTP {status_code}."
+
+
+def _extract_error_message(body: str) -> str | None:
+    if not body:
+        return None
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(payload, dict):
+        message = payload.get("message")
+        if isinstance(message, str) and message.strip():
+            return message.strip()
+    return None
