@@ -48,7 +48,7 @@ OO_VERIFY_SSL=true
 ### 2. Add it to Claude
 
 ```bash
-claude mcp add openobserve-community -- uvx --from openobserve-community-mcp openobserve-mcp
+claude mcp add -s user openobserve-community -- uvx --from openobserve-community-mcp openobserve-mcp
 ```
 
 ### 3. Add it to Codex
@@ -56,12 +56,6 @@ claude mcp add openobserve-community -- uvx --from openobserve-community-mcp ope
 ```bash
 codex mcp add openobserve-community -- uvx --from openobserve-community-mcp openobserve-mcp
 ```
-
-That is the recommended user-facing flow:
-
-- no repo clone
-- no manual absolute path
-- no `PATH` setup for the installed binary
 
 ## Configuration
 
@@ -94,7 +88,7 @@ You can also pass config directly via MCP client env settings.
 ### Claude with inline env
 
 ```bash
-claude mcp add openobserve-community \
+claude mcp add -s user openobserve-community \
   -e OO_BASE_URL=https://openobserve.example.com \
   -e OO_AUTH_MODE=basic \
   -e OO_USERNAME=your_username \
@@ -137,7 +131,7 @@ This installs the `openobserve-mcp` command into your user-level `uv` tools dire
 ### Add To Claude With Global Install
 
 ```bash
-claude mcp add openobserve-community -- openobserve-mcp
+claude mcp add -s user openobserve-community -- openobserve-mcp
 ```
 
 ### Add To Codex With Global Install
@@ -158,7 +152,3 @@ If `openobserve-mcp` is not found, either:
 
 - add `~/.local/bin` to your `PATH`; or
 - use the recommended `uvx --from openobserve-community-mcp openobserve-mcp` launch mode instead.
-
-## Development
-
-For repo-based development and smoke tests, see [LOCAL_SETUP.md](LOCAL_SETUP.md).
