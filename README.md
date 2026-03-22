@@ -29,7 +29,7 @@ This creates a sample config at:
 Edit it:
 
 ```bash
-$EDITOR ~/.config/openobserve-mcp/config.env
+vim ~/.config/openobserve-mcp/config.env
 ```
 
 Example:
