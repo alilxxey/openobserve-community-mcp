@@ -4,6 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
+_NOISY_RECORD_FIELD_PREFIXES = (
+    "_partial",
+)
+
+_NOISY_RECORD_FIELDS = {
+    "_p",
+}
+
 
 def build_list_streams_result(
     *,
@@ -195,18 +203,14 @@ def summarize_search_record(hit: dict[str, Any]) -> dict[str, Any]:
 
 
 def summarize_log_record(hit: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "timestamp_us": hit.get("_timestamp"),
-        "timestamp": hit.get("timestamp"),
-        "level": hit.get("level"),
-        "message": hit.get("message"),
-        "stream": hit.get("stream"),
-        "source_type": hit.get("source_type"),
-        "pod_name": hit.get("kubernetes_pod_name"),
-        "namespace": hit.get("kubernetes_pod_namespace"),
-        "container_name": hit.get("kubernetes_container_name"),
-        "file": hit.get("file"),
-    }
+    result: dict[str, Any] = {}
+    for key, value in hit.items():
+        if value is None:
+            continue
+        if _is_noisy_record_field(key):
+            continue
+        result[key] = value
+    return result
 
 
 def _should_preserve_record(hit: dict[str, Any]) -> bool:
@@ -219,6 +223,12 @@ def _should_preserve_record(hit: dict[str, Any]) -> bool:
         return True
 
     return False
+
+
+def _is_noisy_record_field(key: str) -> bool:
+    if key in _NOISY_RECORD_FIELDS:
+        return True
+    return any(key.startswith(prefix) for prefix in _NOISY_RECORD_FIELD_PREFIXES)
 
 
 def extract_trace_items(raw: Any) -> list[dict[str, Any]]:

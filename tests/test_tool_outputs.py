@@ -49,7 +49,9 @@ class ToolOutputsTests(unittest.TestCase):
                         "kubernetes_pod_namespace": "vault",
                         "kubernetes_container_name": "app",
                         "file": "/var/log/app.log",
-                        "extra_field": "ignored-on-summary",
+                        "extra_field": "preserved-on-summary",
+                        "kubernetes_pod_labels_app": "frontend",
+                        "_p": "F",
                     }
                 ]
             },
@@ -59,16 +61,58 @@ class ToolOutputsTests(unittest.TestCase):
         self.assertEqual(
             result["records"][0],
             {
-                "timestamp_us": 123,
+                "_timestamp": 123,
                 "timestamp": "2026-03-21T12:00:00Z",
                 "level": "ERROR",
                 "message": "boom",
                 "stream": "logs",
                 "source_type": "kubernetes",
-                "pod_name": "pod-1",
-                "namespace": "vault",
-                "container_name": "app",
+                "kubernetes_pod_name": "pod-1",
+                "kubernetes_pod_namespace": "vault",
+                "kubernetes_container_name": "app",
                 "file": "/var/log/app.log",
+                "extra_field": "preserved-on-summary",
+                "kubernetes_pod_labels_app": "frontend",
+            },
+        )
+
+    def test_search_logs_preserves_non_k8s_fields_for_wide_records(self) -> None:
+        result = build_search_logs_result(
+            org_id="default",
+            raw={
+                "hits": [
+                    {
+                        "_timestamp": 123,
+                        "timestamp": "2026-03-22T10:00:00Z",
+                        "level": "INFO",
+                        "message": "request served",
+                        "stream": "app_logs",
+                        "source_type": "file",
+                        "service": "payments-api",
+                        "env": "prod",
+                        "request_id": "req-1",
+                        "status": 200,
+                        "path": "/health",
+                    }
+                ]
+            },
+            include_raw=False,
+        )
+
+        self.assertEqual(
+            result["records"][0],
+            {
+                "_timestamp": 123,
+                "timestamp": "2026-03-22T10:00:00Z",
+                "level": "INFO",
+                "message": "request served",
+                "stream": "app_logs",
+                "source_type": "file",
+                "service": "payments-api",
+                "env": "prod",
+                "request_id": "req-1",
+                "status": 200,
+                "path": "/health",
             },
         )
 
