@@ -4,6 +4,8 @@
 
 This package is designed for local MCP clients such as Claude and Codex.
 
+[![openobserve-community-mcp MCP server](https://glama.ai/mcp/servers/alilxxey/openobserve-community-mcp/badges/card.svg)](https://glama.ai/mcp/servers/alilxxey/openobserve-community-mcp)
+
 What it is:
 
 - `stdio` only
