@@ -82,12 +82,31 @@ class ToolOutputsTests(unittest.TestCase):
             org_id="default",
             stream_name="logs",
             raw=raw,
+            fields_limit=50,
             include_raw=False,
         )
 
         self.assertEqual(result["field_count"], 54)
         self.assertTrue(result["fields_truncated"])
+        self.assertEqual(result["fields_limit"], 50)
         self.assertEqual(len(result["fields_preview"]), 50)
+
+    def test_stream_schema_default_limit_can_show_all_fields(self) -> None:
+        raw = {
+            "schema": [{"name": f"field_{index}", "type": "Utf8"} for index in range(54)],
+            "stats": {},
+        }
+
+        result = build_stream_schema_result(
+            org_id="default",
+            stream_name="logs",
+            raw=raw,
+            fields_limit=100,
+            include_raw=False,
+        )
+
+        self.assertFalse(result["fields_truncated"])
+        self.assertEqual(len(result["fields_preview"]), 54)
 
 
 if __name__ == "__main__":

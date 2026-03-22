@@ -57,13 +57,18 @@ def create_server() -> Any:
         )
 
     @server.tool()
-    def get_stream_schema(stream_name: str, include_raw: bool = False) -> dict[str, Any]:
-        """Get schema information for a specific stream."""
+    def get_stream_schema(
+        stream_name: str,
+        fields_limit: int = 100,
+        include_raw: bool = False,
+    ) -> dict[str, Any]:
+        """Get schema information for a specific stream. Increase fields_limit to inspect more fields from large schemas."""
         raw = client.get_stream_schema(stream_name=stream_name)
         return build_stream_schema_result(
             org_id=client.resolve_org_id(),
             stream_name=stream_name,
             raw=raw,
+            fields_limit=fields_limit,
             include_raw=include_raw,
         )
 
@@ -78,7 +83,7 @@ def create_server() -> Any:
         timeout: int | None = None,
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Run a full SQL search against OpenObserve logs. Supports WHERE, ORDER BY, GROUP BY, and aggregate functions. Time values are Unix timestamps in microseconds."""
+        """Run a full SQL search against OpenObserve logs. Supports WHERE, ORDER BY, GROUP BY, and aggregate functions, e.g. SELECT level, count(*) AS cnt FROM stream_name GROUP BY level ORDER BY cnt DESC. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us."""
         raw = client.search_sql(
             sql=sql,
             start_time=start_time,
@@ -134,7 +139,7 @@ def create_server() -> Any:
         no_count: bool = False,
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Get distinct field values for a stream over a time range. filter_query is passed directly to OpenObserve's _values filter parser and may differ from normal SQL WHERE syntax. Time values are Unix timestamps in microseconds."""
+        """Get distinct field values for a stream over a time range. filter_query uses OpenObserve's _values filter syntax, e.g. kubernetes_pod_namespace=litellm. Simple SQL-like equality such as kubernetes_pod_namespace='litellm' is normalized automatically. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us."""
         raw = client.search_values(
             stream_name=stream_name,
             fields=fields,

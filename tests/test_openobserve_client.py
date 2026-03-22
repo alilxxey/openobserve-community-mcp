@@ -12,9 +12,11 @@ class FakeClient(OpenObserveClient):
         super().__init__(config)
         self._responses = responses
         self.calls: list[tuple[str, str]] = []
+        self.call_kwargs: list[dict[str, object]] = []
 
-    def request_json(self, method: str, path: str, **_: object) -> object:
+    def request_json(self, method: str, path: str, **kwargs: object) -> object:
         self.calls.append((method, path))
+        self.call_kwargs.append(kwargs)
         if not self._responses:
             raise AssertionError("No fake responses left.")
         response = self._responses.pop(0)
@@ -161,6 +163,32 @@ class OpenObserveClientTests(unittest.TestCase):
             )
 
         self.assertIn("filter_query is passed directly to OpenObserve's _values filter parser", str(ctx.exception))
+
+    def test_search_values_normalizes_simple_sql_like_filter(self) -> None:
+        config = OpenObserveConfig(
+            base_url="https://example.com",
+            org_id="default",
+            auth_mode="basic",
+            username="alice",
+            password="secret",
+            token=None,
+            timeout_seconds=20.0,
+            verify_ssl=True,
+        )
+        client = FakeClient(config, responses=[{"hits": [], "total": 0}])
+
+        client.search_values(
+            stream_name="prd_1701_001_copilot",
+            fields="kubernetes_pod_name",
+            start_time=1742572800000000,
+            end_time=1774118400000000,
+            filter_query="kubernetes_pod_namespace = 'litellm'",
+        )
+
+        self.assertEqual(
+            client.call_kwargs[0]["query"]["filter"],
+            "kubernetes_pod_namespace=litellm",
+        )
 
 
 if __name__ == "__main__":

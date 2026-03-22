@@ -37,9 +37,11 @@ def build_stream_schema_result(
     org_id: str,
     stream_name: str,
     raw: Any,
+    fields_limit: int | None,
     include_raw: bool,
 ) -> dict[str, Any]:
     fields = raw.get("schema", []) if isinstance(raw, dict) else []
+    preview_limit = len(fields) if fields_limit is None or fields_limit <= 0 else fields_limit
     result: dict[str, Any] = {
         "org_id": org_id,
         "stream_name": stream_name,
@@ -49,13 +51,14 @@ def build_stream_schema_result(
         "doc_time_min": raw.get("stats", {}).get("doc_time_min") if isinstance(raw, dict) else None,
         "doc_time_max": raw.get("stats", {}).get("doc_time_max") if isinstance(raw, dict) else None,
         "field_count": len(fields),
-        "fields_truncated": len(fields) > 50,
+        "fields_limit": preview_limit,
+        "fields_truncated": len(fields) > preview_limit,
         "fields_preview": [
             {
                 "name": field.get("name"),
                 "type": field.get("type"),
             }
-            for field in fields[:50]
+            for field in fields[:preview_limit]
             if isinstance(field, dict)
         ],
     }

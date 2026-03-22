@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import ssl
 from dataclasses import dataclass, field
 from typing import Any, Mapping
@@ -12,6 +13,8 @@ from urllib import error, parse, request
 from . import PACKAGE_NAME, __version__
 from .config import OpenObserveConfig
 from .errors import OpenObserveMcpError
+
+_SIMPLE_VALUES_FILTER_RE = re.compile(r"^\s*([A-Za-z0-9_.-]+)\s*=\s*(['\"])([^\s'\"]+)\2\s*$")
 
 
 class OpenObserveApiError(OpenObserveMcpError):
@@ -220,7 +223,7 @@ class OpenObserveClient:
             "no_count": no_count,
         }
         if filter_query:
-            query["filter"] = filter_query
+            query["filter"] = _normalize_values_filter_query(filter_query)
         if keyword:
             query["keyword"] = keyword
         if regions:
@@ -375,3 +378,12 @@ def _extract_error_message(body: str) -> str | None:
         if isinstance(message, str) and message.strip():
             return message.strip()
     return None
+
+
+def _normalize_values_filter_query(filter_query: str) -> str:
+    stripped = filter_query.strip()
+    match = _SIMPLE_VALUES_FILTER_RE.match(stripped)
+    if not match:
+        return stripped
+    field, _, value = match.groups()
+    return f"{field}={value}"
