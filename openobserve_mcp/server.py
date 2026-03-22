@@ -82,9 +82,10 @@ def create_server() -> Any:
         use_cache: bool = False,
         timeout: int | None = None,
         output_format: str = "records",
+        record_profile: str = "generic",
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Run a full SQL search against OpenObserve logs. Supports WHERE, ORDER BY, GROUP BY, and aggregate functions, e.g. SELECT level, count(*) AS cnt FROM stream_name GROUP BY level ORDER BY cnt DESC. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us. The limit parameter sets the API page size; if your SQL also includes LIMIT, the smaller effective result wins. output_format can be 'records' or 'columns' for a more token-efficient table shape."""
+        """Run a full SQL search against OpenObserve logs. Supports WHERE, ORDER BY, GROUP BY, and aggregate functions, e.g. SELECT level, count(*) AS cnt FROM stream_name GROUP BY level ORDER BY cnt DESC. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us. The limit parameter sets the API page size; if your SQL also includes LIMIT, the smaller effective result wins. output_format can be 'records' or 'columns'; 'columns' is especially useful for wide SELECT * queries and can save roughly 35-40% tokens. record_profile can be 'generic' or 'kubernetes_compact'; the Kubernetes compact profile trims common noisy metadata fields such as pod labels and pod IP metadata."""
         raw = client.search_sql(
             sql=sql,
             start_time=start_time,
@@ -98,6 +99,7 @@ def create_server() -> Any:
             org_id=client.resolve_org_id(),
             raw=raw,
             output_format=output_format,
+            record_profile=record_profile,
             include_raw=include_raw,
         )
 
@@ -109,9 +111,10 @@ def create_server() -> Any:
         regions: str | None = None,
         timeout: int | None = None,
         output_format: str = "records",
+        record_profile: str = "generic",
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Fetch records around a specific log entry. key must be the target record's _timestamp value in microseconds. output_format can be 'records' or 'columns' for a more token-efficient table shape."""
+        """Fetch records around a specific log entry. key must be the target record's _timestamp value in microseconds. output_format can be 'records' or 'columns' for a more token-efficient table shape. record_profile can be 'generic' or 'kubernetes_compact'."""
         raw = client.search_around(
             stream_name=stream_name,
             key=key,
@@ -125,6 +128,7 @@ def create_server() -> Any:
             size=size,
             raw=raw,
             output_format=output_format,
+            record_profile=record_profile,
             include_raw=include_raw,
         )
 

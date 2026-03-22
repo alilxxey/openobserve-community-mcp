@@ -14,6 +14,18 @@ _NOISY_RECORD_FIELDS = {
     "_p",
 }
 
+_KUBERNETES_COMPACT_DROP_PREFIXES = (
+    "kubernetes_pod_labels_",
+)
+
+_KUBERNETES_COMPACT_DROP_FIELDS = {
+    "kubernetes_container_id",
+    "kubernetes_pod_ip",
+    "kubernetes_pod_ips",
+    "kubernetes_pod_node_name",
+    "kubernetes_pod_owner",
+}
+
 
 def build_list_streams_result(
     *,
@@ -80,10 +92,11 @@ def build_search_logs_result(
     org_id: str,
     raw: Any,
     output_format: str,
+    record_profile: str,
     include_raw: bool,
 ) -> dict[str, Any]:
     hits = raw.get("hits", []) if isinstance(raw, dict) else []
-    records = [summarize_search_record(hit) for hit in hits if isinstance(hit, dict)]
+    records = [_apply_record_profile(summarize_search_record(hit), record_profile=record_profile) for hit in hits if isinstance(hit, dict)]
     result: dict[str, Any] = {
         "org_id": org_id,
         "took": raw.get("took") if isinstance(raw, dict) else None,
@@ -92,6 +105,7 @@ def build_search_logs_result(
         "cached_ratio": raw.get("cached_ratio") if isinstance(raw, dict) else None,
         "hit_count": len(hits),
         "output_format": _normalize_output_format(output_format),
+        "record_profile": _normalize_record_profile(record_profile),
     }
     _attach_record_payload(result, records, output_format=output_format)
     return maybe_include_raw(result, raw, include_raw)
@@ -104,16 +118,18 @@ def build_search_around_result(
     size: int,
     raw: Any,
     output_format: str,
+    record_profile: str,
     include_raw: bool,
 ) -> dict[str, Any]:
     hits = raw.get("hits", []) if isinstance(raw, dict) else []
-    records = [summarize_search_record(hit) for hit in hits if isinstance(hit, dict)]
+    records = [_apply_record_profile(summarize_search_record(hit), record_profile=record_profile) for hit in hits if isinstance(hit, dict)]
     result: dict[str, Any] = {
         "org_id": org_id,
         "stream_name": stream_name,
         "requested_size": size,
         "hit_count": len(hits),
         "output_format": _normalize_output_format(output_format),
+        "record_profile": _normalize_record_profile(record_profile),
     }
     _attach_record_payload(result, records, output_format=output_format)
     return maybe_include_raw(result, raw, include_raw)
@@ -269,6 +285,13 @@ def _normalize_output_format(output_format: str) -> str:
     raise OpenObserveMcpError("output_format must be either 'records' or 'columns'.")
 
 
+def _normalize_record_profile(record_profile: str) -> str:
+    normalized = record_profile.strip().lower()
+    if normalized in {"generic", "kubernetes_compact"}:
+        return normalized
+    raise OpenObserveMcpError("record_profile must be either 'generic' or 'kubernetes_compact'.")
+
+
 def _attach_record_payload(result: dict[str, Any], records: list[dict[str, Any]], *, output_format: str) -> None:
     normalized = _normalize_output_format(output_format)
     if normalized == "records":
@@ -293,3 +316,18 @@ def _to_columnar(records: list[dict[str, Any]]) -> tuple[list[str], list[list[An
     for record in records:
         rows.append([record.get(column) for column in columns])
     return columns, rows
+
+
+def _apply_record_profile(record: dict[str, Any], *, record_profile: str) -> dict[str, Any]:
+    normalized = _normalize_record_profile(record_profile)
+    if normalized == "generic":
+        return record
+
+    compact_record: dict[str, Any] = {}
+    for key, value in record.items():
+        if key in _KUBERNETES_COMPACT_DROP_FIELDS:
+            continue
+        if any(key.startswith(prefix) for prefix in _KUBERNETES_COMPACT_DROP_PREFIXES):
+            continue
+        compact_record[key] = value
+    return compact_record

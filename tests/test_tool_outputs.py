@@ -28,6 +28,7 @@ class ToolOutputsTests(unittest.TestCase):
                 ],
             },
             output_format="records",
+            record_profile="generic",
             include_raw=False,
         )
 
@@ -62,6 +63,7 @@ class ToolOutputsTests(unittest.TestCase):
                 ]
             },
             output_format="records",
+            record_profile="generic",
             include_raw=False,
         )
 
@@ -104,6 +106,7 @@ class ToolOutputsTests(unittest.TestCase):
                 ]
             },
             output_format="records",
+            record_profile="generic",
             include_raw=False,
         )
 
@@ -134,6 +137,7 @@ class ToolOutputsTests(unittest.TestCase):
                 ]
             },
             output_format="columns",
+            record_profile="generic",
             include_raw=False,
         )
 
@@ -160,6 +164,7 @@ class ToolOutputsTests(unittest.TestCase):
                 ]
             },
             output_format="columns",
+            record_profile="generic",
             include_raw=False,
         )
 
@@ -179,8 +184,79 @@ class ToolOutputsTests(unittest.TestCase):
                 org_id="default",
                 raw={"hits": []},
                 output_format="table",
+                record_profile="generic",
                 include_raw=False,
             )
+
+    def test_invalid_record_profile_is_rejected(self) -> None:
+        with self.assertRaises(OpenObserveMcpError):
+            build_search_logs_result(
+                org_id="default",
+                raw={"hits": []},
+                output_format="records",
+                record_profile="compact",
+                include_raw=False,
+            )
+
+    def test_kubernetes_compact_profile_trims_noisy_fields(self) -> None:
+        result = build_search_logs_result(
+            org_id="default",
+            raw={
+                "hits": [
+                    {
+                        "_timestamp": 123,
+                        "message": "boom",
+                        "kubernetes_pod_name": "pod-1",
+                        "kubernetes_pod_namespace": "vault",
+                        "kubernetes_container_name": "app",
+                        "kubernetes_container_id": "containerd://abc",
+                        "kubernetes_pod_ip": "10.0.0.1",
+                        "kubernetes_pod_ips": "[\"10.0.0.1\"]",
+                        "kubernetes_pod_node_name": "node-1",
+                        "kubernetes_pod_owner": "Deployment/app",
+                        "kubernetes_pod_labels_app": "frontend",
+                        "file": "/var/log/pods/app.log",
+                    }
+                ]
+            },
+            output_format="records",
+            record_profile="kubernetes_compact",
+            include_raw=False,
+        )
+
+        self.assertEqual(
+            result["records"][0],
+            {
+                "_timestamp": 123,
+                "message": "boom",
+                "kubernetes_pod_name": "pod-1",
+                "kubernetes_pod_namespace": "vault",
+                "kubernetes_container_name": "app",
+                "file": "/var/log/pods/app.log",
+            },
+        )
+
+    def test_kubernetes_compact_profile_applies_to_columns_output(self) -> None:
+        result = build_search_logs_result(
+            org_id="default",
+            raw={
+                "hits": [
+                    {
+                        "_timestamp": 123,
+                        "message": "boom",
+                        "kubernetes_pod_name": "pod-1",
+                        "kubernetes_container_id": "containerd://abc",
+                    }
+                ]
+            },
+            output_format="columns",
+            record_profile="kubernetes_compact",
+            include_raw=False,
+        )
+
+        self.assertEqual(result["record_profile"], "kubernetes_compact")
+        self.assertEqual(result["columns"], ["_timestamp", "message", "kubernetes_pod_name"])
+        self.assertEqual(result["rows"], [[123, "boom", "pod-1"]])
 
     def test_stream_schema_marks_truncation(self) -> None:
         raw = {
