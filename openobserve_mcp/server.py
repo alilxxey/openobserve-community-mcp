@@ -81,9 +81,10 @@ def create_server() -> Any:
         offset: int = 0,
         use_cache: bool = False,
         timeout: int | None = None,
+        output_format: str = "records",
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Run a full SQL search against OpenObserve logs. Supports WHERE, ORDER BY, GROUP BY, and aggregate functions, e.g. SELECT level, count(*) AS cnt FROM stream_name GROUP BY level ORDER BY cnt DESC. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us."""
+        """Run a full SQL search against OpenObserve logs. Supports WHERE, ORDER BY, GROUP BY, and aggregate functions, e.g. SELECT level, count(*) AS cnt FROM stream_name GROUP BY level ORDER BY cnt DESC. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us. The limit parameter sets the API page size; if your SQL also includes LIMIT, the smaller effective result wins. output_format can be 'records' or 'columns' for a more token-efficient table shape."""
         raw = client.search_sql(
             sql=sql,
             start_time=start_time,
@@ -96,6 +97,7 @@ def create_server() -> Any:
         return build_search_logs_result(
             org_id=client.resolve_org_id(),
             raw=raw,
+            output_format=output_format,
             include_raw=include_raw,
         )
 
@@ -106,9 +108,10 @@ def create_server() -> Any:
         size: int = 20,
         regions: str | None = None,
         timeout: int | None = None,
+        output_format: str = "records",
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Fetch records around a specific log entry. key must be the target record's _timestamp value in microseconds."""
+        """Fetch records around a specific log entry. key must be the target record's _timestamp value in microseconds. output_format can be 'records' or 'columns' for a more token-efficient table shape."""
         raw = client.search_around(
             stream_name=stream_name,
             key=key,
@@ -121,6 +124,7 @@ def create_server() -> Any:
             stream_name=stream_name,
             size=size,
             raw=raw,
+            output_format=output_format,
             include_raw=include_raw,
         )
 
@@ -139,7 +143,7 @@ def create_server() -> Any:
         no_count: bool = False,
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Get distinct field values for a stream over a time range. filter_query uses OpenObserve's _values filter syntax, e.g. kubernetes_pod_namespace=litellm. Simple SQL-like equality such as kubernetes_pod_namespace='litellm' is normalized automatically. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us."""
+        """Get distinct field values for a stream over a time range. filter_query uses OpenObserve's _values filter syntax, e.g. kubernetes_pod_namespace=litellm. Simple SQL-like equality such as kubernetes_pod_namespace='litellm' is normalized automatically. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us. In this tool, total means the number of field groups returned, not the total number of matching log records."""
         raw = client.search_values(
             stream_name=stream_name,
             fields=fields,

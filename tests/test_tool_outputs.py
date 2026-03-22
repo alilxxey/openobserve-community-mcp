@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import unittest
 
-from openobserve_mcp.tool_outputs import build_search_logs_result, build_stream_schema_result
+from openobserve_mcp.errors import OpenObserveMcpError
+from openobserve_mcp.tool_outputs import (
+    build_search_around_result,
+    build_search_logs_result,
+    build_stream_schema_result,
+)
 
 
 class ToolOutputsTests(unittest.TestCase):
@@ -22,6 +27,7 @@ class ToolOutputsTests(unittest.TestCase):
                     }
                 ],
             },
+            output_format="records",
             include_raw=False,
         )
 
@@ -55,6 +61,7 @@ class ToolOutputsTests(unittest.TestCase):
                     }
                 ]
             },
+            output_format="records",
             include_raw=False,
         )
 
@@ -96,6 +103,7 @@ class ToolOutputsTests(unittest.TestCase):
                     }
                 ]
             },
+            output_format="records",
             include_raw=False,
         )
 
@@ -115,6 +123,64 @@ class ToolOutputsTests(unittest.TestCase):
                 "path": "/health",
             },
         )
+
+    def test_search_logs_columns_output_is_columnar(self) -> None:
+        result = build_search_logs_result(
+            org_id="default",
+            raw={
+                "hits": [
+                    {"_timestamp": 123, "message": "first", "level": "INFO"},
+                    {"_timestamp": 124, "level": "ERROR", "service": "api"},
+                ]
+            },
+            output_format="columns",
+            include_raw=False,
+        )
+
+        self.assertEqual(result["output_format"], "columns")
+        self.assertEqual(result["columns"], ["_timestamp", "message", "level", "service"])
+        self.assertEqual(
+            result["rows"],
+            [
+                [123, "first", "INFO", None],
+                [124, None, "ERROR", "api"],
+            ],
+        )
+        self.assertNotIn("records", result)
+
+    def test_search_around_columns_output_is_columnar(self) -> None:
+        result = build_search_around_result(
+            org_id="default",
+            stream_name="logs",
+            size=2,
+            raw={
+                "hits": [
+                    {"_timestamp": 123, "message": "first"},
+                    {"_timestamp": 124, "message": "second", "level": "INFO"},
+                ]
+            },
+            output_format="columns",
+            include_raw=False,
+        )
+
+        self.assertEqual(result["output_format"], "columns")
+        self.assertEqual(result["columns"], ["_timestamp", "message", "level"])
+        self.assertEqual(
+            result["rows"],
+            [
+                [123, "first", None],
+                [124, "second", "INFO"],
+            ],
+        )
+
+    def test_invalid_output_format_is_rejected(self) -> None:
+        with self.assertRaises(OpenObserveMcpError):
+            build_search_logs_result(
+                org_id="default",
+                raw={"hits": []},
+                output_format="table",
+                include_raw=False,
+            )
 
     def test_stream_schema_marks_truncation(self) -> None:
         raw = {

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .errors import OpenObserveMcpError
+
 _NOISY_RECORD_FIELD_PREFIXES = (
     "_partial",
 )
@@ -77,9 +79,11 @@ def build_search_logs_result(
     *,
     org_id: str,
     raw: Any,
+    output_format: str,
     include_raw: bool,
 ) -> dict[str, Any]:
     hits = raw.get("hits", []) if isinstance(raw, dict) else []
+    records = [summarize_search_record(hit) for hit in hits if isinstance(hit, dict)]
     result: dict[str, Any] = {
         "org_id": org_id,
         "took": raw.get("took") if isinstance(raw, dict) else None,
@@ -87,8 +91,9 @@ def build_search_logs_result(
         "scan_records": raw.get("scan_records") if isinstance(raw, dict) else None,
         "cached_ratio": raw.get("cached_ratio") if isinstance(raw, dict) else None,
         "hit_count": len(hits),
-        "records": [summarize_search_record(hit) for hit in hits if isinstance(hit, dict)],
+        "output_format": _normalize_output_format(output_format),
     }
+    _attach_record_payload(result, records, output_format=output_format)
     return maybe_include_raw(result, raw, include_raw)
 
 
@@ -98,16 +103,19 @@ def build_search_around_result(
     stream_name: str,
     size: int,
     raw: Any,
+    output_format: str,
     include_raw: bool,
 ) -> dict[str, Any]:
     hits = raw.get("hits", []) if isinstance(raw, dict) else []
+    records = [summarize_search_record(hit) for hit in hits if isinstance(hit, dict)]
     result: dict[str, Any] = {
         "org_id": org_id,
         "stream_name": stream_name,
         "requested_size": size,
         "hit_count": len(hits),
-        "records": [summarize_search_record(hit) for hit in hits if isinstance(hit, dict)],
+        "output_format": _normalize_output_format(output_format),
     }
+    _attach_record_payload(result, records, output_format=output_format)
     return maybe_include_raw(result, raw, include_raw)
 
 
@@ -252,3 +260,36 @@ def maybe_include_raw(
     if include_raw and (skip_if_same_key is None or result.get(skip_if_same_key) is not raw):
         result["raw"] = raw
     return result
+
+
+def _normalize_output_format(output_format: str) -> str:
+    normalized = output_format.strip().lower()
+    if normalized in {"records", "columns"}:
+        return normalized
+    raise OpenObserveMcpError("output_format must be either 'records' or 'columns'.")
+
+
+def _attach_record_payload(result: dict[str, Any], records: list[dict[str, Any]], *, output_format: str) -> None:
+    normalized = _normalize_output_format(output_format)
+    if normalized == "records":
+        result["records"] = records
+        return
+
+    columns, rows = _to_columnar(records)
+    result["columns"] = columns
+    result["rows"] = rows
+
+
+def _to_columnar(records: list[dict[str, Any]]) -> tuple[list[str], list[list[Any]]]:
+    columns: list[str] = []
+    seen: set[str] = set()
+    for record in records:
+        for key in record:
+            if key not in seen:
+                seen.add(key)
+                columns.append(key)
+
+    rows: list[list[Any]] = []
+    for record in records:
+        rows.append([record.get(column) for column in columns])
+    return columns, rows
