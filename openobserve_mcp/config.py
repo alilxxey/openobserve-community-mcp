@@ -120,7 +120,10 @@ def resolve_dotenv_path(
 
     configured_path = _optional(env, "OO_CONFIG_FILE")
     if configured_path:
-        return _existing_path(configured_path, label="OO_CONFIG_FILE")
+        path = Path(configured_path).expanduser()
+        if path.exists():
+            return path
+        return None
 
     user_path = default_config_path(env=env)
     if user_path.exists():

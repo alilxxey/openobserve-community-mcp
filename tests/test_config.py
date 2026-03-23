@@ -101,6 +101,21 @@ class ConfigTests(unittest.TestCase):
 
         self.assertEqual(resolved, path)
 
+    def test_missing_oo_config_file_is_ignored_when_env_is_present(self) -> None:
+        config = OpenObserveConfig.load(
+            env={
+                "OO_CONFIG_FILE": "/app/.env",
+                "OO_BASE_URL": "https://example.com",
+                "OO_AUTH_MODE": "basic",
+                "OO_USERNAME": "alice",
+                "OO_PASSWORD": "secret",
+            }
+        )
+
+        self.assertEqual(config.base_url, "https://example.com")
+        self.assertEqual(config.auth_mode, "basic")
+        self.assertEqual(config.username, "alice")
+
     def test_missing_basic_credentials_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             empty_config = Path(tmp_dir) / "empty.env"
