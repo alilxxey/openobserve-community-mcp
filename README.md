@@ -41,7 +41,6 @@ vim ~/.config/openobserve-mcp/config.env
 ```
 
 Example:
-
 ```dotenv
 OO_BASE_URL=https://openobserve.example.com
 # Optional if the credentials have access to exactly one organization.
