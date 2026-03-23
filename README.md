@@ -6,7 +6,7 @@ This package is designed for local MCP clients such as Claude and Codex.
 
 <!-- mcp-name: io.github.alilxxey/openobserve-community-mcp -->
 
-[![openobserve-community-mcp MCP server](https://glama.ai/mcp/servers/alilxxey/openobserve-community-mcp/badges/card.svg)](https://glama.ai/mcp/servers/alilxxey/openobserve-community-mcp)
+[![openobserve-community-mcp MCP server](https://glama.ai/mcp/servers/alilxxey/openobserve-community-mcp/badges/card.svg?cacheSeconds=300)](https://glama.ai/mcp/servers/alilxxey/openobserve-community-mcp)
 
 What it is:
 
