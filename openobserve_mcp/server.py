@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Any
 
 from .config import OpenObserveConfig
@@ -19,6 +20,20 @@ from .tool_outputs import (
 )
 
 
+@dataclass(slots=True)
+class _ClientProvider:
+    """Create the OpenObserve client lazily on the first tool invocation."""
+
+    config_loader: Any = OpenObserveConfig.load
+    client_factory: Any = OpenObserveClient
+    _client: OpenObserveClient | None = field(default=None, init=False, repr=False)
+
+    def get(self) -> OpenObserveClient:
+        if self._client is None:
+            self._client = self.client_factory(self.config_loader())
+        return self._client
+
+
 def create_server() -> Any:
     """Create the FastMCP server instance."""
     try:
@@ -28,8 +43,7 @@ def create_server() -> Any:
             "The 'mcp' package is not installed. Install project dependencies before running the server."
         ) from exc
 
-    config = OpenObserveConfig.load()
-    client = OpenObserveClient(config)
+    client_provider = _ClientProvider()
     server = FastMCP("OpenObserve Community MCP")
 
     @server.tool()
@@ -42,6 +56,7 @@ def create_server() -> Any:
         include_raw: bool = False,
     ) -> dict[str, Any]:
         """List streams available in the current organization."""
+        client = client_provider.get()
         raw = client.list_streams(
             stream_type=stream_type,
             keyword=keyword,
@@ -63,6 +78,7 @@ def create_server() -> Any:
         include_raw: bool = False,
     ) -> dict[str, Any]:
         """Get schema information for a specific stream. Increase fields_limit to inspect more fields from large schemas."""
+        client = client_provider.get()
         raw = client.get_stream_schema(stream_name=stream_name)
         return build_stream_schema_result(
             org_id=client.resolve_org_id(),
@@ -86,6 +102,7 @@ def create_server() -> Any:
         include_raw: bool = False,
     ) -> dict[str, Any]:
         """Run a full SQL search against OpenObserve logs. Supports WHERE, ORDER BY, GROUP BY, and aggregate functions, e.g. SELECT level, count(*) AS cnt FROM stream_name GROUP BY level ORDER BY cnt DESC. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us. The limit parameter sets the API page size; if your SQL also includes LIMIT, the smaller effective result wins. output_format can be 'records' or 'columns'; 'columns' is especially useful for wide SELECT * queries and can save roughly 35-40% tokens. record_profile can be 'generic' or 'kubernetes_compact'; the Kubernetes compact profile trims common noisy metadata fields such as pod labels and pod IP metadata."""
+        client = client_provider.get()
         raw = client.search_sql(
             sql=sql,
             start_time=start_time,
@@ -115,6 +132,7 @@ def create_server() -> Any:
         include_raw: bool = False,
     ) -> dict[str, Any]:
         """Fetch records around a specific log entry. key must be the target record's _timestamp value in microseconds. output_format can be 'records' or 'columns' for a more token-efficient table shape. record_profile can be 'generic' or 'kubernetes_compact'."""
+        client = client_provider.get()
         raw = client.search_around(
             stream_name=stream_name,
             key=key,
@@ -148,6 +166,7 @@ def create_server() -> Any:
         include_raw: bool = False,
     ) -> dict[str, Any]:
         """Get distinct field values for a stream over a time range. filter_query uses OpenObserve's _values filter syntax, e.g. kubernetes_pod_namespace=litellm. Simple SQL-like equality such as kubernetes_pod_namespace='litellm' is normalized automatically. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us. In this tool, total means the number of field groups returned, not the total number of matching log records."""
+        client = client_provider.get()
         raw = client.search_values(
             stream_name=stream_name,
             fields=fields,
@@ -177,6 +196,7 @@ def create_server() -> Any:
         include_raw: bool = False,
     ) -> dict[str, Any]:
         """List dashboards in the current organization."""
+        client = client_provider.get()
         raw = client.list_dashboards(folder=folder, title=title, page_size=page_size)
         return build_list_dashboards_result(
             org_id=client.resolve_org_id(),
@@ -187,6 +207,7 @@ def create_server() -> Any:
     @server.tool()
     def get_dashboard(dashboard_id: str, include_raw: bool = False) -> dict[str, Any]:
         """Get a dashboard definition by id."""
+        client = client_provider.get()
         raw = client.get_dashboard(dashboard_id=dashboard_id)
         return build_get_dashboard_result(
             org_id=client.resolve_org_id(),
@@ -207,6 +228,7 @@ def create_server() -> Any:
         include_raw: bool = False,
     ) -> dict[str, Any]:
         """Get the latest trace data from a trace stream. Time values are Unix timestamps in microseconds."""
+        client = client_provider.get()
         raw = client.get_latest_traces(
             stream_name=stream_name,
             start_time=start_time,

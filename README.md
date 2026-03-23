@@ -16,6 +16,10 @@ What it is:
 - regular OpenObserve REST API only
 - no native `/mcp` endpoint
 
+The server can boot without an active OpenObserve configuration so hosted MCP platforms can start it,
+but every tool call still requires a reachable external OpenObserve instance configured via `OO_BASE_URL`
+and credentials.
+
 ## Quick Start
 
 ### 1. Create a config file
@@ -80,6 +84,8 @@ docker run --rm -i \
 
 `OO_ORG_ID` is optional when the credentials only have access to one organization.
 Use `OO_USERNAME` and `OO_PASSWORD` for `basic` auth, or `OO_TOKEN` for `bearer` auth.
+The container can start without these values for hosted MCP platforms, but tool calls will fail until
+you configure a real external OpenObserve instance.
 
 ## Configuration
 
