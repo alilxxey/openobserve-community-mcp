@@ -1,4 +1,4 @@
-name: Release
+name: Publish
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - "*.*.*"
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
   packages: write
 
@@ -15,7 +15,7 @@ env:
   MCP_SERVER_NAME: io.github.alilxxey/openobserve-community-mcp
 
 jobs:
-  release:
+  publish:
     runs-on: ubuntu-latest
     environment: pypi
 
@@ -96,20 +96,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Install MCP Publisher CLI
-        run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
-          chmod +x mcp-publisher
-
-      - name: Publish to MCP Registry
-        run: |
-          ./mcp-publisher login github-oidc
-          ./mcp-publisher publish
-
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          generate_release_notes: true
-          files: dist/*

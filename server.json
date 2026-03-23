@@ -3,7 +3,7 @@
   "name": "io.github.alilxxey/openobserve-community-mcp",
   "title": "OpenObserve Community MCP",
   "description": "Read-only stdio MCP server for OpenObserve Community Edition using the standard REST API.",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "websiteUrl": "https://github.com/alilxxey/openobserve-community-mcp",
   "repository": {
     "url": "https://github.com/alilxxey/openobserve-community-mcp.git",
@@ -13,7 +13,7 @@
     {
       "registryType": "pypi",
       "identifier": "openobserve-community-mcp",
-      "version": "0.2.3",
+      "version": "0.2.4",
       "transport": {
         "type": "stdio"
       },
@@ -78,8 +78,8 @@
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/alilxxey/openobserve-community-mcp:0.2.3",
-      "version": "0.2.3",
+      "identifier": "ghcr.io/alilxxey/openobserve-community-mcp:0.2.4",
+      "version": "0.2.4",
       "transport": {
         "type": "stdio"
       },
