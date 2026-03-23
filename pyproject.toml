@@ -1,12 +1,17 @@
 [project]
 name = "openobserve-community-mcp"
-version = "0.2.1"
+version = "0.2.2"
 description = "OpenObserve community stdio MCP server"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "mcp>=1.12,<2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/alilxxey/openobserve-community-mcp"
+Repository = "https://github.com/alilxxey/openobserve-community-mcp"
+Issues = "https://github.com/alilxxey/openobserve-community-mcp/issues"
 
 [build-system]
 requires = ["setuptools>=68"]

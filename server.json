@@ -1,0 +1,146 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.alilxxey/openobserve-community-mcp",
+  "title": "OpenObserve Community MCP",
+  "description": "Read-only stdio MCP server for OpenObserve Community Edition using the standard REST API.",
+  "version": "0.2.2",
+  "websiteUrl": "https://github.com/alilxxey/openobserve-community-mcp",
+  "repository": {
+    "url": "https://github.com/alilxxey/openobserve-community-mcp.git",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "openobserve-community-mcp",
+      "version": "0.2.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "OO_BASE_URL",
+          "description": "Base URL of the OpenObserve Community instance.",
+          "format": "string",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "OO_ORG_ID",
+          "description": "OpenObserve organization identifier. Optional when the credentials only have access to one organization.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "OO_AUTH_MODE",
+          "description": "Authentication mode: basic or bearer.",
+          "format": "string",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "OO_USERNAME",
+          "description": "OpenObserve username. Required when OO_AUTH_MODE=basic.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "OO_PASSWORD",
+          "description": "OpenObserve password. Required when OO_AUTH_MODE=basic.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "OO_TOKEN",
+          "description": "Bearer token. Required when OO_AUTH_MODE=bearer.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "OO_TIMEOUT_SECONDS",
+          "description": "HTTP timeout in seconds.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "OO_VERIFY_SSL",
+          "description": "Whether to verify TLS certificates.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/alilxxey/openobserve-community-mcp:0.2.2",
+      "version": "0.2.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "OO_BASE_URL",
+          "description": "Base URL of the OpenObserve Community instance.",
+          "format": "string",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "OO_ORG_ID",
+          "description": "OpenObserve organization identifier. Optional when the credentials only have access to one organization.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "OO_AUTH_MODE",
+          "description": "Authentication mode: basic or bearer.",
+          "format": "string",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "OO_USERNAME",
+          "description": "OpenObserve username. Required when OO_AUTH_MODE=basic.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "OO_PASSWORD",
+          "description": "OpenObserve password. Required when OO_AUTH_MODE=basic.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "OO_TOKEN",
+          "description": "Bearer token. Required when OO_AUTH_MODE=bearer.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "OO_TIMEOUT_SECONDS",
+          "description": "HTTP timeout in seconds.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "OO_VERIFY_SSL",
+          "description": "Whether to verify TLS certificates.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}

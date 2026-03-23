@@ -4,6 +4,8 @@
 
 This package is designed for local MCP clients such as Claude and Codex.
 
+<!-- mcp-name: io.github.alilxxey/openobserve-community-mcp -->
+
 [![openobserve-community-mcp MCP server](https://glama.ai/mcp/servers/alilxxey/openobserve-community-mcp/badges/card.svg)](https://glama.ai/mcp/servers/alilxxey/openobserve-community-mcp)
 
 What it is:
@@ -58,6 +60,26 @@ claude mcp add -s user openobserve-community -- uvx --from openobserve-community
 ```bash
 codex mcp add openobserve-community -- uvx --from openobserve-community-mcp openobserve-mcp
 ```
+
+## Docker / Glama
+
+This repository also publishes a container image for Docker-based MCP clients and Glama deployments:
+
+```bash
+docker run --rm -i \
+  -e OO_BASE_URL \
+  -e OO_ORG_ID \
+  -e OO_AUTH_MODE \
+  -e OO_USERNAME \
+  -e OO_PASSWORD \
+  -e OO_TOKEN \
+  -e OO_TIMEOUT_SECONDS \
+  -e OO_VERIFY_SSL \
+  ghcr.io/alilxxey/openobserve-community-mcp:latest
+```
+
+`OO_ORG_ID` is optional when the credentials only have access to one organization.
+Use `OO_USERNAME` and `OO_PASSWORD` for `basic` auth, or `OO_TOKEN` for `bearer` auth.
 
 ## Configuration
 
