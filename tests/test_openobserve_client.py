@@ -155,7 +155,7 @@ class OpenObserveClientTests(unittest.TestCase):
 
         with self.assertRaises(OpenObserveApiError) as ctx:
             client.search_values(
-                stream_name="prd_1701_001_copilot",
+                stream_name="my_stream",
                 fields="kubernetes_pod_name",
                 start_time=1742572800000000,
                 end_time=1774118400000000,
@@ -178,7 +178,7 @@ class OpenObserveClientTests(unittest.TestCase):
         client = FakeClient(config, responses=[{"hits": [], "total": 0}])
 
         client.search_values(
-            stream_name="prd_1701_001_copilot",
+            stream_name="my_stream",
             fields="kubernetes_pod_name",
             start_time=1742572800000000,
             end_time=1774118400000000,

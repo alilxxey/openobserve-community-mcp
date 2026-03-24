@@ -34,6 +34,35 @@ class _ClientProvider:
         return self._client
 
 
+def _normalize_unix_timestamp(value: int, *, field_name: str) -> int:
+    """Normalize seconds, milliseconds, microseconds, or nanoseconds to microseconds."""
+    if value <= 0:
+        raise OpenObserveMcpError(f"{field_name} must be a positive Unix timestamp.")
+    digits = len(str(abs(value)))
+    if digits <= 10:
+        return value * 1_000_000
+    if digits <= 13:
+        return value * 1_000
+    if digits <= 16:
+        return value
+    if digits <= 19:
+        return value // 1_000
+    raise OpenObserveMcpError(
+        f"{field_name} must be a Unix timestamp in seconds, milliseconds, microseconds, or nanoseconds."
+    )
+
+
+def _normalize_time_range(start_time: int, end_time: int) -> tuple[int, int]:
+    """Normalize a user-supplied time range to microseconds and validate ordering."""
+    normalized_start = _normalize_unix_timestamp(start_time, field_name="start_time")
+    normalized_end = _normalize_unix_timestamp(end_time, field_name="end_time")
+    if normalized_start > normalized_end:
+        raise OpenObserveMcpError(
+            "start_time must be less than or equal to end_time after normalization to microseconds."
+        )
+    return normalized_start, normalized_end
+
+
 def create_server() -> Any:
     """Create the FastMCP server instance."""
     try:
@@ -77,7 +106,7 @@ def create_server() -> Any:
         fields_limit: int = 100,
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Get schema information for a specific stream. Increase fields_limit to inspect more fields from large schemas."""
+        """Get schema information for a specific stream. Use this first to confirm real field names before writing SQL; many log streams expose `message` rather than `log`. Increase fields_limit to inspect more fields from large schemas."""
         client = client_provider.get()
         raw = client.get_stream_schema(stream_name=stream_name)
         return build_stream_schema_result(
@@ -101,8 +130,9 @@ def create_server() -> Any:
         record_profile: str = "generic",
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Run a full SQL search against OpenObserve logs. Supports WHERE, ORDER BY, GROUP BY, and aggregate functions, e.g. SELECT level, count(*) AS cnt FROM stream_name GROUP BY level ORDER BY cnt DESC. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us. The limit parameter sets the API page size; if your SQL also includes LIMIT, the smaller effective result wins. output_format can be 'records' or 'columns'; 'columns' is especially useful for wide SELECT * queries and can save roughly 35-40% tokens. record_profile can be 'generic' or 'kubernetes_compact'; the Kubernetes compact profile trims common noisy metadata fields such as pod labels and pod IP metadata."""
+        """Run a full SQL search against OpenObserve logs. Example row query: SELECT _timestamp, message FROM "my_stream" ORDER BY _timestamp DESC LIMIT 20. Example aggregate query: SELECT level, count(*) AS cnt FROM "my_stream" GROUP BY level ORDER BY cnt DESC LIMIT 20. Prefer double quotes around stream names in SQL when in doubt, and confirm actual field names with get_stream_schema instead of assuming a `log` column. start_time and end_time accept Unix timestamps in seconds, milliseconds, microseconds, or nanoseconds and are normalized to microseconds. The limit parameter sets the API page size; if your OpenObserve/DataFusion setup still complains about ORDER BY without a SQL LIMIT, add an explicit LIMIT to the SQL as well. output_format can be 'records' or 'columns'; 'columns' is especially useful for wide SELECT * queries and can save roughly 35-40% tokens. record_profile can be 'generic' or 'kubernetes_compact'; the Kubernetes compact profile trims common noisy metadata fields such as pod labels and pod IP metadata."""
         client = client_provider.get()
+        start_time, end_time = _normalize_time_range(start_time, end_time)
         raw = client.search_sql(
             sql=sql,
             start_time=start_time,
@@ -131,8 +161,9 @@ def create_server() -> Any:
         record_profile: str = "generic",
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Fetch records around a specific log entry. key must be the target record's _timestamp value in microseconds. output_format can be 'records' or 'columns' for a more token-efficient table shape. record_profile can be 'generic' or 'kubernetes_compact'."""
+        """Fetch records around a specific log entry. key accepts Unix timestamps in seconds, milliseconds, microseconds, or nanoseconds for convenience, but the best input is the exact `_timestamp` returned by search_logs; otherwise OpenObserve may return no nearby rows. output_format can be 'records' or 'columns' for a more token-efficient table shape. record_profile can be 'generic' or 'kubernetes_compact'."""
         client = client_provider.get()
+        key = _normalize_unix_timestamp(key, field_name="key")
         raw = client.search_around(
             stream_name=stream_name,
             key=key,
@@ -165,8 +196,9 @@ def create_server() -> Any:
         no_count: bool = False,
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Get distinct field values for a stream over a time range. filter_query uses OpenObserve's _values filter syntax, e.g. kubernetes_pod_namespace=litellm. Simple SQL-like equality such as kubernetes_pod_namespace='litellm' is normalized automatically. Time values are Unix timestamps in microseconds. Tip: 1 hour = 3_600_000_000 us, 1 day = 86_400_000_000 us. In this tool, total means the number of field groups returned, not the total number of matching log records."""
+        """Get distinct field values for a stream over a time range. stream_name is the raw stream name path segment, for example my_stream; do not quote it like SQL. fields is a comma-separated field list. filter_query uses OpenObserve's _values filter syntax, e.g. kubernetes_pod_namespace=litellm. Simple SQL-like equality such as kubernetes_pod_namespace='litellm' is normalized automatically. start_time and end_time accept Unix timestamps in seconds, milliseconds, microseconds, or nanoseconds and are normalized to microseconds. In this tool, total means the number of field groups returned, not the total number of matching log records."""
         client = client_provider.get()
+        start_time, end_time = _normalize_time_range(start_time, end_time)
         raw = client.search_values(
             stream_name=stream_name,
             fields=fields,
@@ -227,8 +259,9 @@ def create_server() -> Any:
         timeout: int | None = None,
         include_raw: bool = False,
     ) -> dict[str, Any]:
-        """Get the latest trace data from a trace stream. Time values are Unix timestamps in microseconds."""
+        """Get the latest trace data from a trace stream. start_time and end_time accept Unix timestamps in seconds, milliseconds, microseconds, or nanoseconds and are normalized to microseconds."""
         client = client_provider.get()
+        start_time, end_time = _normalize_time_range(start_time, end_time)
         raw = client.get_latest_traces(
             stream_name=stream_name,
             start_time=start_time,
