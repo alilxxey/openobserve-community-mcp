@@ -64,6 +64,59 @@ claude mcp add -s user openobserve-community -- uvx --from openobserve-community
 codex mcp add openobserve-community -- uvx --from openobserve-community-mcp openobserve-mcp
 ```
 
+### 4. Add it to OpenCode
+
+OpenCode configures MCP servers under `mcp` in its config file. According to the official docs,
+you can add MCP servers in your global config at `~/.config/opencode/opencode.json` or in a
+project-level `opencode.json`.
+
+See:
+
+- [OpenCode MCP servers docs](https://opencode.ai/docs/mcp-servers/)
+- [OpenCode config docs](https://opencode.ai/docs/config/)
+
+If you created the sample config with `openobserve-mcp init-config`, you can point OpenCode to it:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "openobserve-community": {
+      "type": "local",
+      "command": ["uvx", "--from", "openobserve-community-mcp", "openobserve-mcp"],
+      "enabled": true,
+      "environment": {
+        "OO_CONFIG_FILE": "/absolute/path/to/config.env"
+      }
+    }
+  }
+}
+```
+
+You can also inline the OpenObserve settings directly in the OpenCode MCP config:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "openobserve-community": {
+      "type": "local",
+      "command": ["uvx", "--from", "openobserve-community-mcp", "openobserve-mcp"],
+      "enabled": true,
+      "environment": {
+        "OO_BASE_URL": "https://openobserve.example.com",
+        "OO_AUTH_MODE": "basic",
+        "OO_USERNAME": "your_username",
+        "OO_PASSWORD": "your_password"
+      }
+    }
+  }
+}
+```
+
+OpenCode's MCP docs also support optional `enabled`, `environment`, and `timeout` fields for local
+servers if you want to tune startup behavior.
+
 ## Docker / Glama
 
 This repository also publishes a container image for Docker-based MCP clients and Glama deployments:
@@ -135,6 +188,34 @@ codex mcp add openobserve-community \
   --env OO_PASSWORD=your_password \
   -- uvx --from openobserve-community-mcp openobserve-mcp
 ```
+
+### OpenCode with inline env
+
+If you prefer to keep everything in OpenCode config instead of a separate `config.env`, use:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "openobserve-community": {
+      "type": "local",
+      "command": ["uvx", "--from", "openobserve-community-mcp", "openobserve-mcp"],
+      "enabled": true,
+      "environment": {
+        "OO_BASE_URL": "https://openobserve.example.com",
+        "OO_AUTH_MODE": "basic",
+        "OO_USERNAME": "your_username",
+        "OO_PASSWORD": "your_password"
+      }
+    }
+  }
+}
+```
+
+Official OpenCode references:
+
+- [Config locations and precedence](https://opencode.ai/docs/config/)
+- [Local MCP server configuration](https://opencode.ai/docs/mcp-servers/)
 
 ## Tools
 
